@@ -1,22 +1,23 @@
 package com.utopia.moments
 
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.utopia.moments.ui.theme.MomentsTheme
 import java.util.concurrent.TimeUnit
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
   private val repository = Repository(SPDataSource(this))
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -24,11 +25,15 @@ class MainActivity : ComponentActivity() {
       MomentsTheme {
         // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
+          val (showDialog, setShowDialog) = remember { mutableStateOf(false) }
           AppBar(title = getString(R.string.app_name)) {
-            Toast.makeText(this, "AddItem", Toast.LENGTH_SHORT).show()
+            setShowDialog(true)
           }
           val items = repository.getTasks().map(TaskData::toItem)
           Content(items)
+          if (showDialog) {
+            DialogDemo(setShowDialog = setShowDialog)
+          }
         }
       }
     }
