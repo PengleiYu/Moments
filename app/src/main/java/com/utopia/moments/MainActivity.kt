@@ -1,42 +1,74 @@
 package com.utopia.moments
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.utopia.moments.ui.theme.MomentsTheme
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+  private val repository = Repository(SPDataSource(this))
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
       MomentsTheme {
         // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
-          Content()
+          AppBar(title = getString(R.string.app_name)) {
+            Toast.makeText(this, "AddItem", Toast.LENGTH_SHORT).show()
+          }
+          val items = repository.getTasks().map(TaskData::toItem)
+          Content(items)
         }
       }
     }
   }
-
 }
 
 @Composable
-private fun Content() {
+private fun AppBar(title: String, clickListener: () -> Unit) {
+  TopAppBar(
+    title = {
+      Text(text = title)
+    },
+    actions = {
+      IconButton(onClick = clickListener) {
+        Icon(Icons.Filled.Add, "addItem")
+      }
+    }
+  )
+}
+
+@Composable
+private fun Content(dataList: List<ItemData>) {
   Column {
-    itemDataList.map {
+    dataList.map {
       Item(data = it)
     }
   }
+}
+
+private fun TaskData.toItem(): ItemData {
+  val total = endTime - startTime
+  val elapsed = System.currentTimeMillis() - startTime
+  val progress = elapsed.toFloat() / total
+  return ItemData(
+    progress,
+    title,
+    "按年.${TimeUnit.DAYS.toDays(elapsed)}/${TimeUnit.DAYS.toDays(total)}.已过去",
+    progress,
+    "%"
+  )
 }
 
 data class ItemData(
@@ -73,6 +105,6 @@ fun Item(data: ItemData) {
 @Composable
 fun DefaultPreview() {
   MomentsTheme {
-    Content()
+    Content(itemDataList)
   }
 }
