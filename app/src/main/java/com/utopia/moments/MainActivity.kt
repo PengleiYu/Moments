@@ -22,10 +22,19 @@ class MainActivity : ComponentActivity() {
       MomentsTheme {
         // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
-          val data = ItemData(50f, "Title", "caption", 50f, "%")
-          Item(data = data)
+          Content()
         }
       }
+    }
+  }
+
+}
+
+@Composable
+private fun Content() {
+  Column {
+    itemDataList.map {
+      Item(data = it)
     }
   }
 }
@@ -64,7 +73,6 @@ fun Item(data: ItemData) {
 @Composable
 fun DefaultPreview() {
   MomentsTheme {
-    val data = ItemData(50f, "Title", "caption", 50f, "%")
-    Item(data = data)
+    Content()
   }
 }
