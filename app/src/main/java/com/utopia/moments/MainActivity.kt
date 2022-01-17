@@ -29,18 +29,21 @@ class MainActivity : AppCompatActivity() {
     setContent {
       MomentsTheme {
         Surface(color = MaterialTheme.colors.background) {
-          Column {
-            AppBar(getString(R.string.app_name)) {
-              val items = TaskType.values().map(TaskType::toString)
-              DropDownMenu(items) {
-                val taskType = TaskType.valueOf(items[it])
-                openTaskAddPage(taskType)
+          Scaffold(
+            topBar = {
+              AppBar(getString(R.string.app_name)) {
+                val items = TaskType.values().map(TaskType::toString)
+                DropDownMenu(items) {
+                  val taskType = TaskType.valueOf(items[it])
+                  openTaskAddPage(taskType)
+                }
               }
+            },
+            content = {
+              val items by liveData.observeAsState(initial = listOf())
+              Content(items)
             }
-
-            val items by liveData.observeAsState(initial = listOf())
-            Content(items)
-          }
+          )
         }
       }
     }
@@ -82,7 +85,10 @@ private fun DropDownMenu(items: List<String>, onItemClick: (Int) -> Unit) {
       onDismissRequest = { expanded.value = false },
     ) {
       items.forEachIndexed { index, text ->
-        DropdownMenuItem(onClick = { onItemClick(index) }) {
+        DropdownMenuItem(onClick = {
+          onItemClick(index)
+          expanded.value = false
+        }) {
           Text(text = text)
         }
       }
@@ -95,19 +101,21 @@ private fun Content(dataList: List<ItemData>) {
   Column {
     dataList.map {
       Item(data = it)
+      Divider()
     }
   }
 }
 
 private fun TaskData.toItem(): ItemData {
+  val day = TimeUnit.DAYS.toMillis(1)
   val total = endTime - startTime
   val elapsed = System.currentTimeMillis() - startTime
-  val progress = elapsed.toFloat() / total
+  val progress = elapsed.toFloat() / total.toFloat()
   return ItemData(
     progress,
     title,
-    "按年.${TimeUnit.DAYS.toDays(elapsed)}/${TimeUnit.DAYS.toDays(total)}.已过去",
-    progress,
+    "按年.${elapsed / day}天/${total / day}天.已过去",
+    (progress * 100).toInt(),
     "%"
   )
 }
@@ -116,7 +124,7 @@ data class ItemData(
   val progress: Float,
   val title: String,
   val caption: String,
-  val number: Float,
+  val number: Int,
   val unit: String
 )
 
@@ -124,7 +132,7 @@ data class ItemData(
 fun Item(data: ItemData) {
   Row {
     CircularProgressIndicator(
-      progress = data.progress / 100f,
+      progress = data.progress,
     )
     Column(
       Modifier.weight(1f),
