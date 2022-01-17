@@ -28,7 +28,10 @@ class MainActivity : AppCompatActivity() {
           Column {
             AppBar(getString(R.string.app_name)) {
               val items = TaskType.values().map(TaskType::toString)
-              DropDownMenu(items) {}
+              DropDownMenu(items) {
+                val taskType = TaskType.valueOf(items[it])
+                openTaskAddPage(taskType)
+              }
             }
 
             val items = repository.getTasks().map(TaskData::toItem)
@@ -37,6 +40,10 @@ class MainActivity : AppCompatActivity() {
         }
       }
     }
+  }
+
+  private fun openTaskAddPage(taskType: TaskType) {
+    TaskAddActivity.start(this, taskType)
   }
 }
 

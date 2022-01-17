@@ -16,7 +16,7 @@ class TaskAddActivity : AppCompatActivity() {
     taskType = TaskType.valueOf(extraTaskType)
 
     setContent {
-      Text(text = "Hello")
+      Text(text = "Hello, taskType=$taskType")
     }
   }
 
