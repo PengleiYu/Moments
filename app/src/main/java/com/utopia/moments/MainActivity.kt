@@ -3,6 +3,8 @@ package com.utopia.moments
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -23,7 +25,7 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
   private val repository = Repository(SPDataSource(this))
-  private val liveData = MutableLiveData<List<ItemData>>()
+  private val liveData = MutableLiveData<List<TaskData>>()
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
@@ -41,7 +43,10 @@ class MainActivity : AppCompatActivity() {
             },
             content = {
               val items by liveData.observeAsState(initial = listOf())
-              Content(items)
+              Content(items.map(TaskData::toItem)) {
+                val taskData = items[it]
+                deleteTask(taskData)
+              }
             }
           )
         }
@@ -49,13 +54,22 @@ class MainActivity : AppCompatActivity() {
     }
   }
 
+  override fun onResume() {
+    super.onResume()
+    refresh()
+  }
+
+  private fun deleteTask(taskData: TaskData) {
+    repository.deleteTask(taskData)
+    refresh()
+  }
+
   private fun openTaskAddPage(taskType: TaskType) {
     TaskAddActivity.start(this, taskType)
   }
 
-  override fun onResume() {
-    super.onResume()
-    val items = repository.getTasks().map(TaskData::toItem)
+  private fun refresh() {
+    val items = repository.getTasks()
     liveData.value = items
   }
 }
@@ -97,10 +111,12 @@ private fun DropDownMenu(items: List<String>, onItemClick: (Int) -> Unit) {
 }
 
 @Composable
-private fun Content(dataList: List<ItemData>) {
+private fun Content(dataList: List<ItemData>, onItemClick: (Int) -> Unit) {
   Column {
-    dataList.map {
-      Item(data = it)
+    dataList.mapIndexed { index, itemData ->
+      Box(modifier = Modifier.clickable { onItemClick(index) }) {
+        Item(data = itemData)
+      }
       Divider()
     }
   }
@@ -114,11 +130,14 @@ private fun TaskData.toItem(): ItemData {
   return ItemData(
     progress,
     title,
-    "按年.${elapsed / day}天/${total / day}天.已过去",
+    "按年.${countDays(elapsed, day)}天/${countDays(total, day)}天.已过去",
     (progress * 100).toInt(),
     "%"
   )
 }
+
+private fun countDays(elapsed: Long, day: Long) =
+  ((elapsed / day.toFloat()) + 0.5).toInt()
 
 data class ItemData(
   val progress: Float,
@@ -154,6 +173,15 @@ fun Item(data: ItemData) {
 @Composable
 fun DefaultPreview() {
   MomentsTheme {
-    Content(itemDataList)
+    val dataList = listOf(
+      ItemData(.4f, "2022年进度", "按年.16天/365天.已过去", 42, "%"),
+      ItemData(.14f, "2022年进度", "按年.16天/365天.已过去", 40, "%"),
+      ItemData(.84f, "2022年进度", "按年.16天/365天.已过去", 44, "%"),
+      ItemData(.94f, "2022年进度", "按年.16天/365天.已过去", 24, "%"),
+      ItemData(.40f, "2022年进度", "按年.16天/365天.已过去", 94, "%"),
+      ItemData(.49f, "2022年进度", "按年.16天/365天.已过去", 34, "%"),
+    )
+
+    Content(dataList) {}
   }
 }
