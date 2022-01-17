@@ -5,9 +5,10 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,16 +24,15 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     setContent {
       MomentsTheme {
-        // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
-          val (showDialog, setShowDialog) = remember { mutableStateOf(false) }
-          AppBar(title = getString(R.string.app_name)) {
-            setShowDialog(true)
-          }
-          val items = repository.getTasks().map(TaskData::toItem)
-          Content(items)
-          if (showDialog) {
-            DialogDemo(setShowDialog = setShowDialog)
+          Column {
+            AppBar(getString(R.string.app_name)) {
+              val items = TaskType.values().map(TaskType::toString)
+              DropDownMenu(items) {}
+            }
+
+            val items = repository.getTasks().map(TaskData::toItem)
+            Content(items)
           }
         }
       }
@@ -40,18 +40,37 @@ class MainActivity : AppCompatActivity() {
   }
 }
 
+
 @Composable
-private fun AppBar(title: String, clickListener: () -> Unit) {
+private fun AppBar(
+  title: String, actions: @Composable (RowScope.() -> Unit)
+) {
   TopAppBar(
     title = {
       Text(text = title)
     },
-    actions = {
-      IconButton(onClick = clickListener) {
-        Icon(Icons.Filled.Add, "addItem")
+    actions = actions
+  )
+}
+
+@Composable
+private fun DropDownMenu(items: List<String>, onItemClick: (Int) -> Unit) {
+  val expanded = remember { mutableStateOf(false) }
+  Column {
+    IconButton(onClick = { expanded.value = true }) {
+      Icon(Icons.Default.MoreVert, "more")
+    }
+    DropdownMenu(
+      expanded = expanded.value,
+      onDismissRequest = { expanded.value = false },
+    ) {
+      items.forEachIndexed { index, text ->
+        DropdownMenuItem(onClick = { onItemClick(index) }) {
+          Text(text = text)
+        }
       }
     }
-  )
+  }
 }
 
 @Composable
