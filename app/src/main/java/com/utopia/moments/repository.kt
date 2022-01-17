@@ -27,30 +27,33 @@ interface DataSource {
 class SPDataSource(private val context: Context) : DataSource {
   @Synchronized
   override fun addItem(task: TaskData) {
-    val key = getKey(task.id)
-    if (allData.containsKey(key)) {
-      throw IllegalStateException()
-    }
-    putItem(task)
+    checkDataLoaded()
+    val maxId = allData.keys.map(this::convertKey2Id).maxOrNull() ?: 0L
+    val nextId = maxId + 1
+    putItem(task.copy(id = nextId))
   }
 
   @Synchronized
   override fun deleteItem(taskId: Long) {
+    checkDataLoaded()
     removeItem(taskId)
   }
 
   @Synchronized
   override fun updateItem(task: TaskData) {
+    checkDataLoaded()
     putItem(task)
   }
 
   @Synchronized
   override fun getItem(taskId: Long): TaskData? {
-    return allData[getKey(taskId)]?.toTask()
+    checkDataLoaded()
+    return allData[convertId2Key(taskId)]?.toTask()
   }
 
   @Synchronized
   override fun getAllItem(): List<TaskData> {
+    checkDataLoaded()
     return allData.map { it.value.toTask() }.toList()
   }
 
@@ -61,7 +64,8 @@ class SPDataSource(private val context: Context) : DataSource {
   private var isLoaded = false
 
   private fun checkDataLoaded() {
-    if (isLoaded) return
+//    if (isLoaded) return
+    // TODO: 2022/1/17 暂时每次都重新读取
 
     getSP().all.onEach {
       allData[it.key] = it.value.toString()
@@ -70,14 +74,14 @@ class SPDataSource(private val context: Context) : DataSource {
   }
 
   private fun putItem(item: TaskData) {
-    val key = getKey(item.id)
+    val key = convertId2Key(item.id)
     val json = item.toJson()
     allData[key] = json
     getSP().edit().putString(key, json).apply()
   }
 
   private fun removeItem(id: Long) {
-    val key = getKey(id)
+    val key = convertId2Key(id)
     allData.remove(key = key)
     getSP().edit().remove(key).apply()
   }
@@ -94,8 +98,12 @@ class SPDataSource(private val context: Context) : DataSource {
     return context.getSharedPreferences("moment_task_sp", Context.MODE_PRIVATE)
   }
 
-  private fun getKey(taskId: Long): String {
+  private fun convertId2Key(taskId: Long): String {
     return "task$taskId"
+  }
+
+  private fun convertKey2Id(taskKey: String): Long {
+    return taskKey.removePrefix("task").toLong()
   }
 }
 

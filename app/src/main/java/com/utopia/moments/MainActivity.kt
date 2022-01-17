@@ -10,16 +10,20 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.MutableLiveData
 import com.utopia.moments.ui.theme.MomentsTheme
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
   private val repository = Repository(SPDataSource(this))
+  private val liveData = MutableLiveData<List<ItemData>>()
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContent {
@@ -34,7 +38,7 @@ class MainActivity : AppCompatActivity() {
               }
             }
 
-            val items = repository.getTasks().map(TaskData::toItem)
+            val items by liveData.observeAsState(initial = listOf())
             Content(items)
           }
         }
@@ -44,6 +48,12 @@ class MainActivity : AppCompatActivity() {
 
   private fun openTaskAddPage(taskType: TaskType) {
     TaskAddActivity.start(this, taskType)
+  }
+
+  override fun onResume() {
+    super.onResume()
+    val items = repository.getTasks().map(TaskData::toItem)
+    liveData.value = items
   }
 }
 
